@@ -1,0 +1,73 @@
+from google.cloud import vision_v1p3beta1 as vision
+from google.cloud import translate_v2 as translate
+import magic
+import PyPDF2
+from docx import Document
+
+def detect_document_type(file_path):
+    mime = magic.Magic()
+    file_type = mime.from_file(file_path)
+    return file_type
+
+def extract_text_from_image(image_path):
+    client = vision.ImageAnnotatorClient()
+    with open(image_path, 'rb') as image_file:
+        content = image_file.read()
+    image = vision.Image(content=content)
+    response = client.text_detection(image=image)
+    texts = response.text_annotations
+    return [text.description for text in texts]
+
+def translate_text(text, target_language):
+    client = translate.Client()
+    translation = client.translate(text, target_language=target_language)
+    return translation['input'], translation['translatedText']
+
+def process_pdf(pdf_path, target_language):
+    with open(pdf_path, 'rb') as pdf_file:
+        pdf_reader = PyPDF2.PdfFileReader(pdf_file)
+        num_pages = pdf_reader.numPages
+        translated_pages = []
+
+        for page_num in range(num_pages):
+            page = pdf_reader.getPage(page_num)
+            text = page.extractText()
+            translated_text = translate_text(text, target_language)[1]
+            translated_pages.append(translated_text)
+
+        
+        translated_pdf_path = pdf_path.replace('.pdf', f'_translated_{target_language}.pdf')
+        with open(translated_pdf_path, 'wb') as translated_pdf_file:
+            pdf_writer = PyPDF2.PdfFileWriter()
+            for translated_page in translated_pages:
+                pdf_writer.addPage(PyPDF2.PdfFileReader(translated_page).getPage(0))
+            pdf_writer.write(translated_pdf_file)
+
+def process_word_doc(docx_path, target_language):
+    doc = Document(docx_path)
+    for paragraph in doc.paragraphs:
+        original_text = paragraph.text
+        translated_text = translate_text(original_text, target_language)[1]
+        paragraph.clear()
+        paragraph.add_run(translated_text)
+
+    translated_docx_path = docx_path.replace('.docx', f'_translated_{target_language}.docx')
+    doc.save(translated_docx_path)
+
+
+file_path = 'path/to/your/document.pdf'
+target_language = 'es'  # Spanish
+
+document_type = detect_document_type(file_path)
+
+if 'PDF' in document_type:
+    process_pdf(file_path, target_language)
+elif 'Microsoft Word' in document_type:
+    process_word_doc(file_path, target_language)
+elif 'image' in document_type:
+    image_texts = extract_text_from_image(file_path)
+    for text in image_texts:
+        original, translated = translate_text(text, target_language)
+        # Handle the translated text from images as needed
+else:
+    print(f"Unsupported document type: {document_type}")

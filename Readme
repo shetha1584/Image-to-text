@@ -1,0 +1,27 @@
+# DocuLingo
+
+**DocuLingo** is a Python tool for translating documents from multiple formats (PDF, Word, images) into a target language. It integrates **Google Vision API** for OCR, **Google Translate API** for translation, and handles PDF and DOCX files for end-to-end translation.
+
+---
+
+## **Features**
+- Detects file type automatically (PDF, Word, image)
+- Extracts text from documents and images
+- Translates text to any supported language
+- Saves translated documents as new files
+
+---
+
+## **Tech Stack**
+- Python 3.x
+- Google Cloud Vision API
+- Google Cloud Translate API
+- PyPDF2 (PDF handling)
+- python-docx (Word document handling)
+- python-magic (file type detection)
+
+---
+
+## **Dependencies**
+```bash
+pip install google-cloud-vision google-cloud-translate PyPDF2 python-docx python-magic
